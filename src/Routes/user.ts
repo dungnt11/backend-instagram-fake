@@ -1,5 +1,8 @@
 import { Context } from 'koa';
 import Router from 'koa-router';
+import fs from 'fs';
+import path from 'path';
+
 import UserModel from '../models/user';
 import { TUser } from '../models/user/type';
 
@@ -61,6 +64,16 @@ router.get('/users/self', async (ctx: Context) => {
       { url: 'https://1.bp.blogspot.com/-G8ph08uwTjU/YMbODHIrlJI/AAAAAAADY0M/YOzzvz4QF7I--LePsqivHt6oVtj-vLi9ACLcBGAsYHQ/s0/199117336_1821273348056208_1432593509381551511_n.jpg' }
     ]
   }
+});
+
+router.post('/create-post', async (ctx: Context) => {
+  const { body, files } = ctx.request as any;
+  if (files) {
+    fs.renameSync(`${files.path}`, path.join(__dirname, '../../public'));
+    console.log(files);
+    execSync(`mv ${files.path} /public/`);
+  }
+  console.log(body, files);
 });
 
 export { router };
