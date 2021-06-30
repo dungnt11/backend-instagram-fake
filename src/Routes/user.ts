@@ -1,7 +1,7 @@
 import { Context } from 'koa';
 import Router from 'koa-router';
-import fs from 'fs';
 import path from 'path';
+import { execSync } from 'child_process';
 
 import UserModel from '../models/user';
 import { TUser } from '../models/user/type';
@@ -69,9 +69,8 @@ router.get('/users/self', async (ctx: Context) => {
 router.post('/create-post', async (ctx: Context) => {
   const { body, files } = ctx.request as any;
   if (files) {
-    fs.renameSync(`${files.path}`, path.join(__dirname, '../../public'));
-    console.log(files);
-    execSync(`mv ${files.path} /public/`);
+    const dirSaveFile = path.join(__dirname, '/../../public');
+    execSync(`mv ${files.file.path} ${dirSaveFile}/${files.file.name}`);
   }
   console.log(body, files);
 });
