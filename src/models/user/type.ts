@@ -1,8 +1,10 @@
 import { Document } from 'mongoose';
 
 export type TUser = {
-  username: string,
+  email: string,
   password: string,
+  displayName: string,
+  avatar: string,
 };
 
 export type IUser = Document & TUser;

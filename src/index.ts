@@ -2,6 +2,7 @@ import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 // @ts-ignore
 import formidable from 'koa2-formidable';
+import koaStatic from 'koa-static';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { router } from './Routes/user';
@@ -21,7 +22,7 @@ const server = new Koa();
 /** middleware */
 server.use(formidable());
 server.use(bodyParser());
-
+server.use(koaStatic('public', {}));
 
 server.use(errorHandle());
 server.use(router.routes());
