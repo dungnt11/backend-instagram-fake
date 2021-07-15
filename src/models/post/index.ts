@@ -8,8 +8,9 @@ const postSchema = new Schema(
     status: { type: String, default: '' },
     width: { type: Number, require: true },
     height: { type: Number, require: true },
-    likes: { type: Number, default: 0 },
+    likes: { type: Array, default: [] },
     comments: { type: Array, default: [] },
+    type: String,
   },
   { timestamps: true },
 );

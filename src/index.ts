@@ -22,7 +22,7 @@ const server = new Koa();
 /** middleware */
 server.use(formidable());
 server.use(bodyParser());
-server.use(koaStatic('public', {}));
+server.use(koaStatic('public'));
 
 server.use(errorHandle());
 server.use(router.routes());

@@ -1,8 +1,10 @@
 import { Context } from 'koa';
+import { Types } from 'mongoose';
 import Router from 'koa-router';
 import path from 'path';
 import { execSync } from 'child_process';
 import dotenv from 'dotenv';
+import fs from 'fs';
 
 import UserModel from '../models/user';
 import PostModel from '../models/post';
@@ -49,32 +51,41 @@ router.post('/login', async (ctx: Context) => {
   }
 });
 
+router.get('/users', async (ctx: Context) => {
+  const usersDB = await UserModel.find().lean();
+  if (!usersDB) ctx.throw(404);
+  ctx.status = 200;
+  ctx.body = usersDB;
+});
+
 router.get('/comments/:id', async (ctx: Context) => {
   const { id } = ctx.params;
-  console.log(id);
-  ctx.body = [
-    {
-      id: "12",
-      from: { username: 'Trung Tran' },
-      text: 'Xinh quá em ơi!',
-    },
-    {
-      id: "13",
-      from: { username: 'Hoan' },
-      text: 'Vẫn thua em Duyên đô mi',
-    },
-  ]
+  const postDB = await PostModel.findById(id).select(['comments']).lean();
+  const contentComment = [];
+
+  await Promise.all(postDB.comments.map(async (postItem) => {
+    const userDBItem = await UserModel.findById(postItem.idUser).lean();
+    const commentObj = {
+      from: {
+        id: userDBItem._id,
+        displayName: userDBItem.displayName,
+        avatar: userDBItem.avatar,
+      },
+      text: postItem.comment,
+    }
+    contentComment.push(commentObj);
+  }));
+
+  ctx.body = contentComment;
 });
 
 router.get('/feeds/:idUser', async (ctx: Context) => {
-  const { idUser } = ctx.params;
-  console.log(idUser);
   const postUser = await PostModel.find().lean();
   if (!postUser) ctx.throw(404);
 
   const postsCreate = [];
 
-  await Promise.all(postUser.map(async (userItem) => {
+  await Promise.all(postUser.reverse().map(async (userItem) => {
     const userDB = await UserModel.findById(userItem.userID).lean();
     if (userDB) {
       postsCreate.push({
@@ -82,21 +93,29 @@ router.get('/feeds/:idUser', async (ctx: Context) => {
         username: userDB.displayName,
         avatar: userDB.avatar,
         status: userItem.status,
+        type: userItem.type,
         likes: userItem.likes,
         id: userItem._id,
-        comments: { count: userItem.comments.length }
+        userID: userItem.userID,
+        comments: { count: userItem.comments.length },
       });
     }
   }));
   ctx.body = postsCreate;
 });
 
-router.get('/users/self', async (ctx: Context) => {
-  ctx.body = {
-    profile_picture: 'https://1.bp.blogspot.com/-G8ph08uwTjU/YMbODHIrlJI/AAAAAAADY0M/YOzzvz4QF7I--LePsqivHt6oVtj-vLi9ACLcBGAsYHQ/s0/199117336_1821273348056208_1432593509381551511_n.jpg',
-    data: [
-      { url: 'https://1.bp.blogspot.com/-G8ph08uwTjU/YMbODHIrlJI/AAAAAAADY0M/YOzzvz4QF7I--LePsqivHt6oVtj-vLi9ACLcBGAsYHQ/s0/199117336_1821273348056208_1432593509381551511_n.jpg' }
-    ]
+router.get('/users/self/:id', async (ctx: Context) => {
+  const { id } = ctx.params;
+  const UserDB = await UserModel.findById(id).lean();
+  const postsDB = await PostModel.find({ userID: Types.ObjectId(id) }).lean();
+  if (UserDB) {
+    ctx.body = {
+      profile_picture: UserDB.avatar,
+      data: postsDB.map((postItem) => ({
+        ...postItem,
+        image: `${process.env.TUNNEL_URL}/${postItem.image}`
+      })),
+    }
   }
 });
 
@@ -115,6 +134,7 @@ router.post('/create-post', async (ctx: Context) => {
       status: body.status,
       width: body.width,
       height: body.height,
+      type: body.type,
     };
 
     const postDB = new PostModel(postContent);
@@ -127,6 +147,58 @@ router.post('/create-post', async (ctx: Context) => {
       updatedAt: (postDBCreated as any).updatedAt,
     });
   }
+});
+
+router.get('/reaction/:idPost/:idUser', async (ctx: Context) => {
+  const { idPost, idUser } = ctx.params;
+  const postDB = await PostModel.findById(idPost).lean();
+  if (!postDB) ctx.throw(404);
+  if (postDB.likes.includes(idUser)) {
+    // dislike
+    const newPostLikeDB = postDB.likes.filter((postID) => postID !== idUser);
+    await PostModel.findByIdAndUpdate(idPost, { likes: newPostLikeDB });
+  } else {
+    const newPostLikeDB = postDB.likes.concat([idUser]);
+    await PostModel.findByIdAndUpdate(idPost, { likes: newPostLikeDB });
+  }
+  ctx.status = 200;
+});
+
+router.post('/comment/:idPost/:idUser', async (ctx: Context) => {
+  const { idPost, idUser } = ctx.params;
+  const { comment } = ctx.request.body as { comment: string };
+  const commentObj = {
+    comment,
+    idUser,
+  };
+
+  const postDBUpdate = await PostModel.findByIdAndUpdate(idPost, { $push: { comments: commentObj } }, { new: true });
+  const contentComment = [];
+
+  await Promise.all(postDBUpdate.comments.map(async (postItem) => {
+    const userDBItem = await UserModel.findById(postItem.idUser).lean();
+    const commentObj = {
+      from: {
+        id: userDBItem._id,
+        displayName: userDBItem.displayName,
+        avatar: userDBItem.avatar,
+      },
+      text: postItem.comment,
+    }
+    contentComment.push(commentObj);
+  }));
+
+  ctx.body = contentComment;
+});
+
+router.get('/video/:url', async (ctx: Context) => {
+  const { url } = ctx.params;
+  const src = fs.createReadStream(`/home/dung/instagram-app/public/${url}`);
+  const videoSize = fs.statSync(`/home/dung/instagram-app/public/${url}`)
+  ctx.status = 304;
+  console.log(videoSize.size);
+  ctx.header['content-length'] = String(videoSize.size);
+  ctx.body = src;
 });
 
 export { router };

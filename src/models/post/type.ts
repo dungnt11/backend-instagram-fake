@@ -1,17 +1,17 @@
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type TPost = {
-  userID: string,
+  userID: Types.ObjectId,
   image: string,
   status: string,
   width: number,
   height: number,
-  likes: number,
+  likes: string[],
   comments: {
-    displayName: string,
     comment: string,
     idUser: string,
   }[],
+  type: 'video'|'image',
 };
 
 export type IPost = Document & TPost;
