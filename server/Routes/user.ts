@@ -201,4 +201,15 @@ router.get('/video/:url', async (ctx: Context) => {
   ctx.body = src;
 });
 
-export { router };
+router.post('/user-admin', async (ctx: Context) => {
+  const { email, password } = ctx.request.body as { email: string, password: string };
+  const userDB = await UserModel.findOne({ email, isAdmin: true, password }).lean();
+
+  if (!userDB) ctx.throw(404);
+
+  if (userDB) {
+    ctx.status = 200;
+  }
+});
+
+export default router;
