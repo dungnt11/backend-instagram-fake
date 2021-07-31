@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node --project tsconfig.server.json server/index.ts"
+    "dev": "ts-node --project tsconfig.server.json server/index.ts",
+    "build": "next build"
   },
   "keywords": [],
   "author": "",
@@ -23,6 +24,7 @@
     "koa2-formidable": "^1.0.3",
     "mongoose": "^5.12.13",
     "next": "^11.0.1",
+    "react": "^17.0.2",
     "reactstrap": "^8.9.0",
     "ts-node": "^10.0.0"
   },
@@ -32,6 +34,8 @@
     "@types/koa-router": "^7.4.2",
     "@types/koa-static": "^4.0.1",
     "@types/node": "^15.12.2",
-    "@types/react": "^17.0.14"
+    "@types/react": "^17.0.14",
+    "@typescript-eslint/eslint-plugin": "^4.28.5",
+    "eslint-config-next": "^11.0.1"
   }
 }
