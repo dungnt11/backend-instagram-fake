@@ -43,7 +43,7 @@ router.post('/login', async (ctx: Context) => {
   if (!userDB) ctx.throw(404);
   if (userDB.password !== password) ctx.throw(404);
   if (userDB.isDisable) ctx.throw(404);
-  if (isAdmin && !userDB.isAdmin) ctx.throw(404);
+  if (typeof isAdmin !== 'undefined' && !userDB.isAdmin) ctx.throw(404);
   ctx.status = 200;
   ctx.body = {
     _id: userDB._id,
