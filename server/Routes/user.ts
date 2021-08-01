@@ -34,21 +34,23 @@ router.post('/register', async (ctx: Context) => {
     email,
     displayName,
     avatar: userCreated.avatar,
-  }
+  };
 });
 
 router.post('/login', async (ctx: Context) => {
-  const { email, password } = ctx.request.body as TUser;
+  const { email, password, isAdmin } = ctx.request.body as TUser;
   const userDB = await UserModel.findOne({ email }).lean();
   if (!userDB) ctx.throw(404);
   if (userDB.password !== password) ctx.throw(404);
+  if (userDB.isDisable) ctx.throw(404);
+  if (isAdmin && !userDB.isAdmin) ctx.throw(404);
   ctx.status = 200;
   ctx.body = {
     _id: userDB._id,
     email: userDB.email,
     displayName: userDB.displayName,
     avatar: userDB.avatar,
-  }
+  };
 });
 
 router.get('/users', async (ctx: Context) => {
@@ -56,6 +58,11 @@ router.get('/users', async (ctx: Context) => {
   if (!usersDB) ctx.throw(404);
   ctx.status = 200;
   ctx.body = usersDB;
+});
+
+router.get('/all-post', async (ctx: Context) => {
+  const postDB = await PostModel.find();
+  ctx.body = postDB;
 });
 
 router.get('/comments/:id', async (ctx: Context) => {
@@ -72,7 +79,7 @@ router.get('/comments/:id', async (ctx: Context) => {
         avatar: userDBItem.avatar,
       },
       text: postItem.comment,
-    }
+    };
     contentComment.push(commentObj);
   }));
 
@@ -113,9 +120,9 @@ router.get('/users/self/:id', async (ctx: Context) => {
       profile_picture: UserDB.avatar,
       data: postsDB.map((postItem) => ({
         ...postItem,
-        image: `${process.env.TUNNEL_URL}/${postItem.image}`
+        image: `${process.env.TUNNEL_URL}/${postItem.image}`,
       })),
-    }
+    };
   }
 });
 
@@ -177,15 +184,15 @@ router.post('/comment/:idPost/:idUser', async (ctx: Context) => {
 
   await Promise.all(postDBUpdate.comments.map(async (postItem) => {
     const userDBItem = await UserModel.findById(postItem.idUser).lean();
-    const commentObj = {
+    const commentObjPush = {
       from: {
         id: userDBItem._id,
         displayName: userDBItem.displayName,
         avatar: userDBItem.avatar,
       },
       text: postItem.comment,
-    }
-    contentComment.push(commentObj);
+    };
+    contentComment.push(commentObjPush);
   }));
 
   ctx.body = contentComment;
@@ -194,7 +201,7 @@ router.post('/comment/:idPost/:idUser', async (ctx: Context) => {
 router.get('/video/:url', async (ctx: Context) => {
   const { url } = ctx.params;
   const src = fs.createReadStream(`/home/dung/instagram-app/public/${url}`);
-  const videoSize = fs.statSync(`/home/dung/instagram-app/public/${url}`)
+  const videoSize = fs.statSync(`/home/dung/instagram-app/public/${url}`);
   ctx.status = 304;
   console.log(videoSize.size);
   ctx.header['content-length'] = String(videoSize.size);
@@ -210,6 +217,14 @@ router.post('/user-admin', async (ctx: Context) => {
   if (userDB) {
     ctx.status = 200;
   }
+});
+
+router.get('/toggle-user/:idUser', async (ctx: Context) => {
+  const { idUser } = ctx.params as { idUser: string };
+  const currentUserDB = await UserModel.findById(idUser).lean();
+
+  const userDB = await UserModel.findByIdAndUpdate(idUser, { isDisable: !currentUserDB.isDisable }, { new: true });
+  ctx.body = userDB;
 });
 
 export default router;

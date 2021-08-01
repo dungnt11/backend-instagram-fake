@@ -5,6 +5,8 @@ export type TUser = {
   password: string,
   displayName: string,
   avatar: string,
+  isAdmin: boolean,
+  isDisable: boolean,
 };
 
 export type IUser = Document & TUser;
