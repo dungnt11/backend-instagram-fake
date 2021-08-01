@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node --project tsconfig.server.json server/index.ts",
-    "build": "next build"
+    "build": "next build && tsc --project tsconfig.server.json",
+    "build-backend": "rm -rf dist && tsc --project tsconfig.server.json",
+    "start": "NODE_ENV=production && node dist/server/index.js",
+    "type-check": "tsc"
   },
   "keywords": [],
   "author": "",

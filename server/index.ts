@@ -2,7 +2,9 @@ import next from 'next';
 import Koa from 'koa';
 import Router from 'koa-router';
 import bodyParser from 'koa-bodyparser';
+import serve from 'koa-static';
 import formidable from 'koa2-formidable';
+import path from 'path';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import protecedRouter from './Routes/user';
@@ -16,9 +18,11 @@ const {
   PORT,
 } = process.env;
 
+const staticDirPath = path.join(__dirname, 'public');
+
 const server = new Koa();
 const router = new Router();
-const dev = process.env.NODE_ENV !== "production";
+const dev = process.env.NODE_ENV !== 'production';
 
 const nextApp = next({ dev });
 const handler = nextApp.getRequestHandler();
@@ -26,6 +30,7 @@ const handler = nextApp.getRequestHandler();
 /** middleware */
 server.use(formidable());
 server.use(bodyParser());
+server.use(serve(staticDirPath));
 
 (async () => {
   try {

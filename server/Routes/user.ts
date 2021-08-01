@@ -132,7 +132,7 @@ router.post('/create-post', async (ctx: Context) => {
   const userDB = await UserModel.findById(body._id).lean();
 
   if (files) {
-    const dirSaveFile = path.join(__dirname, '/../../public');
+    const dirSaveFile = path.join(__dirname, '/../../server/public');
     execSync(`mv ${files.file.path} ${dirSaveFile}/${files.file.name}`);
 
     const postContent = {
