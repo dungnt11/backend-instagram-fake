@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@babel/core": "^7.14.8",
     "@babel/plugin-proposal-class-properties": "^7.14.5",
     "@babel/plugin-proposal-decorators": "^7.14.5",
     "@hookstate/core": "^3.0.8",
@@ -27,6 +28,7 @@
     "mongoose": "^5.12.13",
     "next": "^11.0.1",
     "react": "^17.0.2",
+    "react-dom": "^17.0.2",
     "reactstrap": "^8.9.0",
     "ts-node": "^10.0.0"
   },
@@ -38,6 +40,8 @@
     "@types/node": "^15.12.2",
     "@types/react": "^17.0.14",
     "@typescript-eslint/eslint-plugin": "^4.28.5",
-    "eslint-config-next": "^11.0.1"
+    "eslint": "^7.32.0",
+    "eslint-config-next": "^11.0.1",
+    "typescript": "^4.3.5"
   }
 }
