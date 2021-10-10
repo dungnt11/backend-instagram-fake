@@ -7,7 +7,7 @@
     "dev": "ts-node --project tsconfig.server.json server/index.ts",
     "build": "next build && tsc --project tsconfig.server.json",
     "build-backend": "rm -rf dist && tsc --project tsconfig.server.json",
-    "start": "NODE_ENV=production && node dist/server/index.js",
+    "start": "node dist/server/index.js --port=3007",
     "type-check": "tsc"
   },
   "keywords": [],
@@ -23,6 +23,7 @@
     "bootstrap": "^5.0.2",
     "dotenv": "^10.0.0",
     "eslint-config-airbnb-typescript": "^12.3.1",
+    "formidable": "^1.2.2",
     "koa": "^2.13.1",
     "koa-bodyparser": "^4.3.0",
     "koa-router": "^10.0.0",

@@ -8,6 +8,7 @@ import fs from 'fs';
 
 import UserModel from '../models/user';
 import PostModel from '../models/post';
+import HistoryModel from '../models/history';
 import { TUser } from '../models/user/type';
 
 const router = new Router({ prefix: '/api' });
@@ -126,10 +127,16 @@ router.get('/users/self/:id', async (ctx: Context) => {
   }
 });
 
+router.get('/test', async (ctx: Context) => {
+  ctx.body = 'Hello world!';
+});
+
 router.post('/create-post', async (ctx: Context) => {
   const { body, files } = ctx.request as any;
   if (!body._id) ctx.throw(404);
   const userDB = await UserModel.findById(body._id).lean();
+
+  if (!userDB) ctx.throw(404);
 
   if (files) {
     const dirSaveFile = path.join(__dirname, '/../../server/public');
@@ -160,6 +167,7 @@ router.get('/reaction/:idPost/:idUser', async (ctx: Context) => {
   const { idPost, idUser } = ctx.params;
   const postDB = await PostModel.findById(idPost).lean();
   if (!postDB) ctx.throw(404);
+
   if (postDB.likes.includes(idUser)) {
     // dislike
     const newPostLikeDB = postDB.likes.filter((postID) => postID !== idUser);
@@ -167,7 +175,20 @@ router.get('/reaction/:idPost/:idUser', async (ctx: Context) => {
   } else {
     const newPostLikeDB = postDB.likes.concat([idUser]);
     await PostModel.findByIdAndUpdate(idPost, { likes: newPostLikeDB });
+    // history
+    await HistoryModel.findOneAndUpdate({
+      myID: String(idUser),
+      toID: String(postDB.userID),
+    },
+    {
+      myID: idUser,
+      toID: String(postDB.userID),
+      messenger: 'Đã thích bài viết của bạn',
+    },
+    { upsert: true },
+    );
   }
+  
   ctx.status = 200;
 });
 
@@ -194,6 +215,19 @@ router.post('/comment/:idPost/:idUser', async (ctx: Context) => {
     };
     contentComment.push(commentObjPush);
   }));
+
+  // history
+  await HistoryModel.findOneAndUpdate({
+    myID: String(idUser),
+    toID: String(postDBUpdate.userID),
+  },
+  {
+    myID: idUser,
+    toID: String(postDBUpdate.userID),
+    messenger: 'Đã comment bài viết của bạn',
+  },
+  { upsert: true },
+  );
 
   ctx.body = contentComment;
 });
@@ -225,6 +259,22 @@ router.get('/toggle-user/:idUser', async (ctx: Context) => {
 
   const userDB = await UserModel.findByIdAndUpdate(idUser, { isDisable: !currentUserDB.isDisable }, { new: true });
   ctx.body = userDB;
+});
+
+router.get('/friend', async (ctx: Context) => {
+  const allUser = await UserModel.find().select(['avatar', 'displayName']).lean();
+
+  ctx.body = allUser;
+});
+
+router.get('/history/:id', async(ctx: Context) => {
+  const id = ctx.params.id;
+  const historyByID = await HistoryModel.find({
+    toID: id,
+  })
+  .populate('myID', 'displayName avatar', UserModel)
+  .populate('toID', 'displayName avatar', UserModel);
+  ctx.body = historyByID;
 });
 
 export default router;

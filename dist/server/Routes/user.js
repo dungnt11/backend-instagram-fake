@@ -11,6 +11,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const fs_1 = __importDefault(require("fs"));
 const user_1 = __importDefault(require("../models/user"));
 const post_1 = __importDefault(require("../models/post"));
+const history_1 = __importDefault(require("../models/history"));
 const router = new koa_router_1.default({ prefix: '/api' });
 dotenv_1.default.config();
 router.post('/register', async (ctx) => {
@@ -39,7 +40,7 @@ router.post('/login', async (ctx) => {
         ctx.throw(404);
     if (userDB.isDisable)
         ctx.throw(404);
-    if (isAdmin && !userDB.isAdmin)
+    if (typeof isAdmin !== 'undefined' && !userDB.isAdmin)
         ctx.throw(404);
     ctx.status = 200;
     ctx.body = {
@@ -112,11 +113,16 @@ router.get('/users/self/:id', async (ctx) => {
         };
     }
 });
+router.get('/test', async (ctx) => {
+    ctx.body = 'Hello world!';
+});
 router.post('/create-post', async (ctx) => {
     const { body, files } = ctx.request;
     if (!body._id)
         ctx.throw(404);
     const userDB = await user_1.default.findById(body._id).lean();
+    if (!userDB)
+        ctx.throw(404);
     if (files) {
         const dirSaveFile = path_1.default.join(__dirname, '/../../server/public');
         child_process_1.execSync(`mv ${files.file.path} ${dirSaveFile}/${files.file.name}`);
@@ -150,6 +156,15 @@ router.get('/reaction/:idPost/:idUser', async (ctx) => {
     else {
         const newPostLikeDB = postDB.likes.concat([idUser]);
         await post_1.default.findByIdAndUpdate(idPost, { likes: newPostLikeDB });
+        // history
+        await history_1.default.findOneAndUpdate({
+            myID: String(idUser),
+            toID: String(postDB.userID),
+        }, {
+            myID: idUser,
+            toID: String(postDB.userID),
+            messenger: 'Đã thích bài viết của bạn',
+        }, { upsert: true });
     }
     ctx.status = 200;
 });
@@ -174,6 +189,15 @@ router.post('/comment/:idPost/:idUser', async (ctx) => {
         };
         contentComment.push(commentObjPush);
     }));
+    // history
+    await history_1.default.findOneAndUpdate({
+        myID: String(idUser),
+        toID: String(postDBUpdate.userID),
+    }, {
+        myID: idUser,
+        toID: String(postDBUpdate.userID),
+        messenger: 'Đã comment bài viết của bạn',
+    }, { upsert: true });
     ctx.body = contentComment;
 });
 router.get('/video/:url', async (ctx) => {
@@ -199,5 +223,18 @@ router.get('/toggle-user/:idUser', async (ctx) => {
     const currentUserDB = await user_1.default.findById(idUser).lean();
     const userDB = await user_1.default.findByIdAndUpdate(idUser, { isDisable: !currentUserDB.isDisable }, { new: true });
     ctx.body = userDB;
+});
+router.get('/friend', async (ctx) => {
+    const allUser = await user_1.default.find().select(['avatar', 'displayName']).lean();
+    ctx.body = allUser;
+});
+router.get('/history/:id', async (ctx) => {
+    const id = ctx.params.id;
+    const historyByID = await history_1.default.find({
+        toID: id,
+    })
+        .populate('myID', 'displayName avatar', user_1.default)
+        .populate('toID', 'displayName avatar', user_1.default);
+    ctx.body = historyByID;
 });
 exports.default = router;
